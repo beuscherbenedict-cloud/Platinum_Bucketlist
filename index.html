@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0f24" />
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="icon" href="./icon-192.png" sizes="192x192">
+  <title>Spiele‑Bucket‑List</title>
+  <style>
+    :root {
+      --bg: #0f1220;
+      --card: #181c2f;
+      --ink: #e8ebff;
+      --ink-dim: #b9c0ff;
+      --accent: #8aa0ff;
+      --accent-2: #53d6b6;
+      --danger: #ff6b6b;
+      --muted: #2a2f4a;
+      --radius: 18px;
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 100% 0%, #1b2140, #0f1220);
+      color: var(--ink);
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .wrap { width: min(900px, 96vw); padding: 24px 0 120px; }
+    h1 { font-size: clamp(28px, 4vw, 40px); letter-spacing: .3px; margin: 16px 8px 24px; }
+    .card { background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
+            border: 1px solid #252a44; border-radius: var(--radius); padding: 18px; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
+    .inputs { display: grid; grid-template-columns: 1fr 160px 140px; gap: 10px; }
+    .inputs input[type="text"], .inputs input[type="number"] {
+      font-size: clamp(18px, 3.2vw, 22px);
+      padding: 16px 14px; border-radius: 14px; border: 1px solid #2a3156; background: #151a36; color: var(--ink);
+      outline: none; box-shadow: inset 0 0 0 2px transparent; transition: box-shadow .15s ease, border-color .15s ease;
+    }
+    .inputs input:focus { box-shadow: inset 0 0 0 2px var(--accent); border-color: var(--accent); }
+    .btn { cursor: pointer; user-select: none; font-weight: 700; border-radius: 14px; border: none; padding: 16px 16px; font-size: clamp(18px,3.2vw,20px);
+           background: linear-gradient(180deg, var(--accent), #5f78ff); color: #0b0f24; box-shadow: 0 6px 24px rgba(95,120,255,.45); }
+    .btn:active { transform: translateY(1px); }
+    .list { margin-top: 16px; display: grid; gap: 10px; }
+    .row { display: grid; grid-template-columns: 56px 1fr 140px 120px; align-items: center; gap: 10px; padding: 14px; border-radius: 14px; background: #151a36; border: 1px solid #262c4f; }
+    .toggle { appearance: none; width: 36px; height: 36px; border-radius: 10px; border: 2px solid #3a4272; background: #10142e; display: grid; place-items: center; cursor: pointer; }
+    .toggle:checked { border-color: var(--accent-2); background: rgba(83,214,182,.15); }
+    .toggle:checked::after { content: "✓"; font-size: 22px; color: var(--accent-2); font-weight: 900; }
+    .title { font-size: clamp(18px, 3.2vw, 22px); line-height: 1.3; }
+    .title.done { color: var(--ink-dim); text-decoration: line-through; text-decoration-thickness: 2px; }
+    .hours { font-size: clamp(18px, 3.2vw, 22px); justify-self: end; }
+    .actions { display: flex; gap: 8px; justify-self: end; }
+    .iconBtn { cursor: pointer; border: 1px solid #2c325a; background: #0f1433; color: var(--ink); padding: 10px 12px; border-radius: 12px; font-size: 16px; }
+    .iconBtn:hover { border-color: var(--accent); }
+    .iconBtn.danger { border-color: #43222a; background: #241016; color: #ffd6d6; }
+    .empty { color: var(--ink-dim); text-align: center; padding: 20px; border: 1px dashed #31375b; border-radius: 14px; background: #0f1433; }
+    .footerSum { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(12, 16, 36, .75); backdrop-filter: blur(10px);
+                 border-top: 1px solid #262c4f; padding: 14px 16px; display: flex; justify-content: center; }
+    .sumCard { width: min(900px, 96vw); display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+    .sumText { font-size: clamp(18px, 3vw, 22px); color: var(--ink-dim); }
+    .sumValue { font-size: clamp(24px, 4vw, 30px); font-weight: 900; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin: 0 6px 14px; }
+    .mini { color: var(--ink-dim); font-size: 14px }
+    @media (max-width: 640px) {
+      .inputs { grid-template-columns: 1fr 120px 120px; }
+      .row { grid-template-columns: 48px 1fr 110px 110px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <h1>Spiele‑Bucket‑List</h1>
+      <div class="mini">Offline & installierbar • Tippe auf ✓ wenn fertig</div>
+    </div>
+    <div class="card">
+      <div class="inputs">
+        <input id="titleInput" type="text" placeholder="Spieltitel" autocomplete="off" />
+        <input id="hoursInput" type="number" placeholder="Stunden" min="0" step="0.5" inputmode="decimal" />
+        <button class="btn" id="addBtn">Hinzufügen</button>
+      </div>
+      <div id="list" class="list"></div>
+      <div id="empty" class="empty" style="display:none">Noch nichts auf der Liste. Füge oben Spiele hinzu.</div>
+    </div>
+  </div>
+  <div class="footerSum">
+    <div class="sumCard">
+      <div class="sumText"><span id="openCount">0</span> offen • Summe verbleibender Stunden</div>
+      <div class="sumValue" id="sumHours">0</div>
+    </div>
+  </div>
+<script>
+(function(){
+  const LS_KEY = 'gameBucketList.v1';
+  let items = [];
+  const $ = sel => document.querySelector(sel);
+  const listEl = $('#list');
+  const emptyEl = $('#empty');
+  const sumEl = $('#sumHours');
+  const countEl = $('#openCount');
+  const titleIn = $('#titleInput');
+  const hoursIn = $('#hoursInput');
+  const addBtn = $('#addBtn');
+
+  function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4); }
+  function save(){ localStorage.setItem(LS_KEY, JSON.stringify(items)); }
+  function load(){ try { items = JSON.parse(localStorage.getItem(LS_KEY)||'[]'); } catch(e){ items = []; } }
+
+  function render(){
+    const sorted = [...items].sort((a,b)=> (a.done===b.done? a.title.localeCompare(b.title) : a.done - b.done));
+    listEl.innerHTML = '';
+    if(sorted.length===0){ emptyEl.style.display='block'; }
+    else { emptyEl.style.display='none'; }
+    const frag = document.createDocumentFragment();
+    sorted.forEach(item => {
+      const row = document.createElement('div'); row.className='row'; row.dataset.id=item.id;
+      const toggle = document.createElement('input'); toggle.type='checkbox'; toggle.className='toggle'; toggle.checked = item.done;
+      toggle.addEventListener('change', ()=>{ item.done = toggle.checked; save(); updateSum(); updateRow(row, item); });
+      const title = document.createElement('div'); title.className='title' + (item.done?' done':''); title.textContent=item.title;
+      title.title='Zum Bearbeiten doppelt tippen/klicken';
+      title.addEventListener('dblclick', ()=> startEditTitle(title, item));
+      const hours = document.createElement('div'); hours.className='hours'; hours.textContent = formatHours(item.hours);
+      hours.title='Zum Bearbeiten doppelt tippen/klicken';
+      hours.addEventListener('dblclick', ()=> startEditHours(hours, item));
+      const actions = document.createElement('div'); actions.className='actions';
+      const editBtn = document.createElement('button'); editBtn.className='iconBtn'; editBtn.textContent='✏️ Bearbeiten';
+      editBtn.addEventListener('click', ()=> startEditInline(row, item));
+      const delBtn = document.createElement('button'); delBtn.className='iconBtn danger'; delBtn.textContent='🗑️ Löschen';
+      delBtn.addEventListener('click', ()=> remove(item.id));
+      actions.append(editBtn, delBtn);
+      row.append(toggle, title, hours, actions);
+      frag.append(row);
+    });
+    listEl.append(frag);
+    updateSum();
+  }
+
+  function updateRow(row, item){
+    const title = row.querySelector('.title');
+    const hours = row.querySelector('.hours');
+    title.textContent = item.title;
+    title.classList.toggle('done', item.done);
+    hours.textContent = formatHours(item.hours);
+  }
+
+  function formatHours(n){
+    if(!Number.isFinite(n)) return '0';
+    return (Math.round(n * 10) / 10).toLocaleString(undefined, { maximumFractionDigits: 1 }) + ' h';
+  }
+
+  function updateSum(){
+    const open = items.filter(x=>!x.done);
+    const sum = open.reduce((acc,x)=> acc + (Number.isFinite(x.hours)? x.hours : 0), 0);
+    countEl.textContent = String(open.length);
+    sumEl.textContent = (Math.round(sum * 10) / 10).toLocaleString(undefined, { maximumFractionDigits: 1 }) + ' h';
+  }
+
+  function add(){
+    const t = (titleIn.value||'').trim();
+    const raw = (hoursIn.value||'').toString().replace(',', '.')
+    const h = parseFloat(raw);
+    if(!t){ titleIn.focus(); return; }
+    const hours = Number.isFinite(h) && h >= 0 ? h : 0;
+    items.push({ id: uid(), title: t, hours, done: false });
+    titleIn.value=''; hoursIn.value='';
+    save(); render(); titleIn.focus();
+  }
+
+  function remove(id){
+    items = items.filter(x=>x.id!==id);
+    save(); render();
+  }
+
+  function startEditTitle(el, item){
+    const val = item.title;
+    const input = document.createElement('input'); input.type='text'; input.value=val; input.className='title'; input.style.padding='10px'; input.style.borderRadius='10px'; input.style.border='1px solid #2a3156'; input.style.background='#0f1433'; input.style.color='var(--ink)';
+    const finish = ()=>{ item.title = input.value.trim()||item.title; save(); render(); };
+    input.addEventListener('keydown', e=>{ if(e.key==='Enter') finish(); if(e.key==='Escape') render(); });
+    input.addEventListener('blur', finish);
+    el.replaceWith(input); input.focus(); input.select();
+  }
+
+  function startEditHours(el, item){
+    const input = document.createElement('input'); input.type='number'; input.step='0.5'; input.min='0'; input.value=String(item.hours);
+    input.className='hours'; input.style.padding='8px'; input.style.borderRadius='10px'; input.style.border='1px solid #2a3156'; input.style.background='#0f1433'; input.style.color='var(--ink)'; input.style.textAlign='right';
+    const finish = ()=>{ const v = parseFloat((input.value||'').replace(',', '.')); if(Number.isFinite(v) && v>=0) item.hours=v; save(); render(); };
+    input.addEventListener('keydown', e=>{ if(e.key==='Enter') finish(); if(e.key==='Escape') render(); });
+    input.addEventListener('blur', finish);
+    el.replaceWith(input); input.focus(); input.select();
+  }
+
+  function startEditInline(row, item){
+    const titleEl = row.querySelector('.title');
+    const hoursEl = row.querySelector('.hours');
+    startEditTitle(titleEl, item);
+    startEditHours(hoursEl, item);
+  }
+
+  // SW register
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(console.error);
+    });
+  }
+
+  load(); render();
+
+  // Keyboard: Enter adds
+  document.getElementById('addBtn').addEventListener('click', add);
+  document.getElementById('titleInput').addEventListener('keydown', e=>{ if(e.key==='Enter') add(); });
+  document.getElementById('hoursInput').addEventListener('keydown', e=>{ if(e.key==='Enter') add(); });
+})();
+</script>
+</body>
+</html>
