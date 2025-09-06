@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
@@ -9,78 +9,50 @@
   <link rel="icon" href="./icon-192.png" sizes="192x192">
   <title>Games Bucket List</title>
   <style>
-    :root {
-      --bg: #0f1220;
-      --card: #181c2f;
-      --ink: #e8ebff;
-      --ink-dim: #b9c0ff;
-      --accent: #8aa0ff;
-      --accent-2: #53d6b6;
-      --danger: #ff6b6b;
-      --muted: #2a2f4a;
-      --radius: 18px;
-      --highlight: rgba(138,160,255,.14);
-    }
-    html, body { height: 100%; }
-    html { -webkit-text-size-adjust: 100%; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      background: radial-gradient(1200px 800px at 100% 0%, #1b2140, #0f1220);
-      color: var(--ink);
-      display: flex; flex-direction: column; align-items: center;
-    }
-    .wrap { width: min(900px, 96vw); padding: 24px 0 200px; }
-    h1 { font-size: clamp(28px, 4vw, 40px); letter-spacing: .3px; margin: 16px 8px 24px; }
-    .card { background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01));
-            border: 1px solid #252a44; border-radius: var(--radius); padding: 18px; box-shadow: 0 12px 40px rgba(0,0,0,.35); }
-    .inputs { display: grid; grid-template-columns: 1fr 140px 120px; gap: 10px; }
-    .inputs input[type="text"], .inputs input[type="number"] {
-      font-size: clamp(18px, 3.2vw, 22px);
-      padding: 14px 12px; border-radius: 14px; border: 1px solid #2a3156; background: #151a36; color: var(--ink);
-      outline: none; box-shadow: inset 0 0 0 2px transparent; transition: box-shadow .15s ease, border-color .15s ease;
-    }
-    .inputs input:focus { box-shadow: inset 0 0 0 2px var(--accent); border-color: var(--accent); }
-    .btn { cursor: pointer; user-select: none; font-weight: 700; border-radius: 12px; border: none; padding: 10px 12px; font-size: 16px;
-           background: linear-gradient(180deg, var(--accent), #5f78ff); color: #0b0f24; box-shadow: 0 6px 24px rgba(95,120,255,.45); }
-    .btn:active { transform: translateY(1px); }
-    .list { margin-top: 16px; display: grid; gap: 10px; }
-    .row { display: grid; grid-template-columns: 44px 1fr 120px 120px; align-items: center; gap: 10px; padding: 14px; border-radius: 14px; background: #151a36; border: 1px solid #262c4f; }
-    .row.active { background: var(--highlight); border-color: #3b468a; box-shadow: inset 0 0 0 2px rgba(138,160,255,.25); }
-    .select { appearance: none; width: 28px; height: 28px; border-radius: 8px; border: 2px solid #3a4272; background: #10142e; display: grid; place-items: center; cursor: pointer; }
-    .select:checked { border-color: var(--accent); background: rgba(138,160,255,.18); }
-    .select:checked::after { content: "✓"; font-size: 18px; color: var(--accent); font-weight: 900; }
-    .title { font-size: clamp(18px, 3.2vw, 22px); line-height: 1.3; }
-    .hours { font-size: clamp(18px, 3.2vw, 22px); justify-self: end; }
-    .toggleActive { display: inline-flex; align-items: center; gap: 8px; justify-self: end; }
-    .switch { position: relative; width: 56px; height: 30px; background: #0e1331; border: 1px solid #2b3260; border-radius: 30px; cursor: pointer; }
-    .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #3a4272; transition: transform .18s ease; }
-    .switch.on { background: #153243; border-color: #2a6a5d; }
-    .switch.on::after { background: #53d6b6; transform: translateX(26px); }
-    .empty { color: var(--ink-dim); text-align: center; padding: 20px; border: 1px dashed #31375b; border-radius: 14px; background: #0f1433; }
-    .footerBar { position: fixed; left: 0; right: 0; bottom: 0; display: grid; gap: 8px; padding: 10px 16px; background: rgba(12,16,36,.8); backdrop-filter: blur(10px); border-top: 1px solid #262c4f; }
-    .sumCard { width: min(900px, 96vw); margin: 0 auto; display: grid; grid-template-columns: 1fr auto; align-items: center; }
-    .sumText { font-size: clamp(16px, 3vw, 20px); color: var(--ink-dim); }
-    .sumValue { font-size: clamp(22px, 4vw, 28px); font-weight: 900; }
-    .planCard { width: min(900px, 96vw); margin: 0 auto; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
-    .planInput { display: flex; align-items: center; gap: 10px; color: var(--ink-dim); }
-    .planInput input { width: 120px; padding: 10px 12px; font-size: 18px; border-radius: 12px; border: 1px solid #2a3156; background: #151a36; color: var(--ink); }
-    .planValue { font-size: clamp(18px, 3.2vw, 22px); font-weight: 700; }
-    .bulk { width: min(900px, 96vw); margin: 0 auto; display: none; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; }
-    .bulk.show { display: grid; }
-    .btn.ghost { background: #0f1433; color: var(--ink); border: 1px solid #2a325a; box-shadow: none; }
-    .btn.danger { background: linear-gradient(180deg, #ff9a9a, #ff6b6b); color: #250a0a; box-shadow: 0 6px 24px rgba(255,107,107,.35); }
-    .hint { color: var(--ink-dim); font-size: 14px; }
-    @media (max-width: 640px) {
-      .inputs { grid-template-columns: 1fr 120px 110px; }
-      .row { grid-template-columns: 40px 1fr 100px 110px; }
-      .planCard { grid-template-columns: 1fr; }
-    }
+    :root { --bg:#0f1220; --card:#181c2f; --ink:#e8ebff; --ink-dim:#b9c0ff; --accent:#8aa0ff; --accent-2:#53d6b6; --danger:#ff6b6b; --muted:#2a2f4a; --radius:18px; --highlight:rgba(138,160,255,.14); }
+    html,body{height:100%} html{-webkit-text-size-adjust:100%}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";background:radial-gradient(1200px 800px at 100% 0%,#1b2140,#0f1220);color:var(--ink);display:flex;flex-direction:column;align-items:center}
+    .wrap{width:min(900px,96vw);padding:24px 0 240px}
+    h1{font-size:clamp(28px,4vw,40px);letter-spacing:.3px;margin:16px 8px 24px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid #252a44;border-radius:var(--radius);padding:18px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+    .inputs{display:grid;grid-template-columns:1fr 140px 120px;gap:10px}
+    .inputs input[type=text],.inputs input[type=number]{font-size:clamp(18px,3.2vw,22px);padding:14px 12px;border-radius:14px;border:1px solid #2a3156;background:#151a36;color:var(--ink);outline:none;box-shadow:inset 0 0 0 2px transparent;transition:box-shadow .15s ease,border-color .15s ease}
+    .inputs input:focus{box-shadow:inset 0 0 0 2px var(--accent);border-color:var(--accent)}
+    .btn{cursor:pointer;user-select:none;font-weight:700;border-radius:12px;border:none;padding:10px 12px;font-size:16px;background:linear-gradient(180deg,var(--accent),#5f78ff);color:#0b0f24;box-shadow:0 6px 24px rgba(95,120,255,.45)}
+    .btn:active{transform:translateY(1px)}
+    .list{margin-top:16px;display:grid;gap:10px}
+    .row{display:grid;grid-template-columns:44px 1fr 120px 120px;align-items:center;gap:10px;padding:14px;border-radius:14px;background:#151a36;border:1px solid #262c4f}
+    .row.active{background:var(--highlight);border-color:#3b468a;box-shadow:inset 0 0 0 2px rgba(138,160,255,.25)}
+    .select{appearance:none;width:28px;height:28px;border-radius:8px;border:2px solid #3a4272;background:#10142e;display:grid;place-items:center;cursor:pointer}
+    .select:checked{border-color:var(--accent);background:rgba(138,160,255,.18)}
+    .select:checked::after{content:"✓";font-size:18px;color:var(--accent);font-weight:900}
+    .title{font-size:clamp(18px,3.2vw,22px);line-height:1.3}
+    .hours{font-size:clamp(18px,3.2vw,22px);justify-self:end}
+    .toggleActive{display:inline-flex;align-items:center;gap:8px;justify-self:end}
+    .switch{position:relative;width:56px;height:30px;background:#0e1331;border:1px solid #2b3260;border-radius:30px;cursor:pointer}
+    .switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#3a4272;transition:transform .18s ease}
+    .switch.on{background:#153243;border-color:#2a6a5d}
+    .switch.on::after{background:#53d6b6;transform:translateX(26px)}
+    .empty{color:var(--ink-dim);text-align:center;padding:20px;border:1px dashed #31375b;border-radius:14px;background:#0f1433}
+    .footerBar{position:fixed;left:0;right:0;bottom:0;display:grid;gap:8px;padding:10px 16px;background:rgba(12,16,36,.8);backdrop-filter:blur(10px);border-top:1px solid #262c4f}
+    .sumCard{width:min(900px,96vw);margin:0 auto;display:grid;grid-template-columns:1fr auto;align-items:center}
+    .sumText{font-size:clamp(16px,3vw,20px);color:var(--ink-dim)}
+    .sumValue{font-size:clamp(22px,4vw,28px);font-weight:900}
+    .planCard{width:min(900px,96vw);margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+    .planInput{display:flex;align-items:center;gap:10px;color:var(--ink-dim)}
+    .planInput input{width:120px;padding:10px 12px;font-size:18px;border-radius:12px;border:1px solid #2a3156;background:#151a36;color:var(--ink)}
+    .planValue{font-size:clamp(18px,3.2vw,22px);font-weight:700}
+    .bulk{width:min(900px,96vw);margin:0 auto;display:none;grid-template-columns:1fr auto auto auto;align-items:center;gap:8px}
+    .bulk.show{display:grid}
+    .btn.ghost{background:#0f1433;color:var(--ink);border:1px solid #2a325a;box-shadow:none}
+    .btn.danger{background:linear-gradient(180deg,#ff9a9a,#ff6b6b);color:#250a0a;box-shadow:0 6px 24px rgba(255,107,107,.35)}
+    .hint{color:var(--ink-dim);font-size:14px}
+    @media (max-width:640px){.inputs{grid-template-columns:1fr 120px 110px}.row{grid-template-columns:40px 1fr 100px 110px}.planCard{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="topbar" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin: 0 6px 14px;">
+    <div class="topbar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 6px 14px;">
       <h1>Games Bucket List</h1>
       <div class="hint">Press Enter or tap Add • Double-tap to edit • Switch = active</div>
     </div>
@@ -111,13 +83,19 @@
       <div class="hint"><span id="selCount">0</span> selected</div>
       <button class="btn ghost" id="bulkEditBtn" disabled>Edit</button>
       <button class="btn danger" id="bulkDeleteBtn" disabled>Delete</button>
+      <button class="btn ghost" id="exportBtn">Export</button>
+      <button class="btn ghost" id="importBtn">Import</button>
+      <input id="importFile" type="file" accept="application/json" style="display:none" />
     </div>
   </div>
 
 <script>
 (function(){
-  const LS_KEY = 'gameBucketList.v5';
-  const LS_DAILY = 'gameBucketList.daily';
+  // Use a STABLE storage key so data survives app updates
+  const STORAGE_KEY = 'gameBucketList.data';
+  const DAILY_KEY = 'gameBucketList.daily';
+  const APP_VERSION = 'v6'; // for internal migrations if needed later
+
   let items = [];
   const $ = sel => document.querySelector(sel);
   const listEl = $('#list');
@@ -131,20 +109,29 @@
   const bulkBar = $('#bulkBar');
   const bulkEditBtn = $('#bulkEditBtn');
   const bulkDeleteBtn = $('#bulkDeleteBtn');
+  const exportBtn = $('#exportBtn');
+  const importBtn = $('#importBtn');
+  const importFile = $('#importFile');
   const dailyIn = $('#dailyHours');
   const etaText = $('#etaText');
 
-  // Ensure initial scale is correct on PWA resume/open
   window.scrollTo(0,0);
 
   function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4); }
-  function save(){ localStorage.setItem(LS_KEY, JSON.stringify(items)); }
-  function load(){ try { items = JSON.parse(localStorage.getItem(LS_KEY)||'[]'); } catch(e){ items = []; } }
+  function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: APP_VERSION, items })); }
+  function load(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) { items = []; return; }
+      const parsed = JSON.parse(raw);
+      items = parsed.items || [];
+    } catch(e){ items = []; }
+  }
 
   function render(){
     const sorted = [...items].sort((a,b)=> (Number(b.active) - Number(a.active)) || a.title.localeCompare(b.title));
     listEl.innerHTML = '';
-    if(sorted.length===0){ emptyEl.style.display='block'; } else { emptyEl.style.display='none'; }
+    emptyEl.style.display = sorted.length===0 ? 'block' : 'none';
     const frag = document.createDocumentFragment();
     sorted.forEach(item => {
       const row = document.createElement('div'); row.className='row' + (item.active ? ' active' : ''); row.dataset.id=item.id;
@@ -153,12 +140,10 @@
       select.addEventListener('change', ()=>{ item.selected = select.checked; save(); updateBulkUI(); });
 
       const title = document.createElement('div'); title.className='title'; title.textContent=item.title;
-      title.title='Double-tap to edit';
-      title.addEventListener('dblclick', ()=> startEditTitle(title, item));
+      title.title='Double-tap to edit'; title.addEventListener('dblclick', ()=> startEditTitle(title, item));
 
       const hours = document.createElement('div'); hours.className='hours'; hours.textContent = formatHours(item.hours);
-      hours.title='Double-tap to edit';
-      hours.addEventListener('dblclick', ()=> startEditHours(hours, item));
+      hours.title='Double-tap to edit'; hours.addEventListener('dblclick', ()=> startEditHours(hours, item));
 
       const activeWrap = document.createElement('div'); activeWrap.className='toggleActive';
       const switchEl = document.createElement('div'); switchEl.className='switch' + (item.active ? ' on' : '');
@@ -179,7 +164,7 @@
   function updateBulkUI(){
     const selected = items.filter(x=>x.selected);
     selCountEl.textContent = String(selected.length);
-    bulkBar.classList.toggle('show', selected.length > 0);
+    bulkBar.classList.toggle('show', selected.length > 0 || true); // always show to expose export/import
     bulkEditBtn.disabled = selected.length !== 1;
     bulkDeleteBtn.disabled = selected.length === 0;
   }
@@ -248,24 +233,58 @@
     el.replaceWith(input); input.focus(); input.select();
   }
 
-  // Add actions
+  // Export / Import
+  function exportData(){
+    const data = { version: APP_VERSION, exportedAt: new Date().toISOString(), items, daily: dailyIn.value || '' };
+    const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'games-bucket-backup.json';
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+  }
+  function importData(file){
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      try{
+        const data = JSON.parse(String(e.target.result||'{}'));
+        if(Array.isArray(data.items)){ items = data.items.map(x => ({ id: x.id || (Math.random()+''+Date.now()), title: x.title||'', hours: Number(x.hours)||0, active: !!x.active, selected:false })); }
+        if(data.daily !== undefined){ dailyIn.value = String(data.daily); localStorage.setItem(DAILY_KEY, dailyIn.value); }
+        save(); render(); updateSum();
+        alert('Import successful.');
+      }catch(err){ alert('Import failed: ' + err); }
+    };
+    reader.readAsText(file);
+  }
+
+  // Buttons + Enter
   addBtn.addEventListener('click', add);
   titleIn.addEventListener('keydown', e=>{ if(e.key==='Enter') add(); });
   hoursIn.addEventListener('keydown', e=>{ if(e.key==='Enter') add(); });
 
-  // Bulk actions
+  // Bulk + backup
   document.getElementById('bulkDeleteBtn').addEventListener('click', removeSelected);
   document.getElementById('bulkEditBtn').addEventListener('click', editSelected);
+  exportBtn.addEventListener('click', exportData);
+  importBtn.addEventListener('click', ()=> importFile.click());
+  importFile.addEventListener('change', ()=>{ if(importFile.files && importFile.files[0]) importData(importFile.files[0]); });
 
   // Daily ETA persist & recalc
-  function saveDaily(){ localStorage.setItem(LS_DAILY, dailyIn.value || ''); }
+  function saveDaily(){ localStorage.setItem(DAILY_KEY, dailyIn.value || ''); }
   dailyIn.addEventListener('input', ()=>{ saveDaily(); updateSum(); });
 
   // Init
-  load(); try { const v = localStorage.getItem(LS_DAILY); if(v!==null) dailyIn.value = v; } catch(e) {}
-  render();
+  try { const v = localStorage.getItem(DAILY_KEY); if(v!==null) dailyIn.value = v; } catch(e) {}
+  try {
+    const old = localStorage.getItem('gameBucketList.v4') || localStorage.getItem('gameBucketList.v5');
+    // one-time migration if older keys exist
+    if(old && !localStorage.getItem(STORAGE_KEY)){
+      const arr = JSON.parse(old) || [];
+      if(Array.isArray(arr)) items = arr;
+    }
+  } catch(e){}
+  load(); render();
 
-  // On PWA resume, ensure we are at top (avoid being stuck zoomed below footer)
   document.addEventListener('visibilitychange', () => { if (!document.hidden) window.scrollTo(0,0); });
 })();
 </script>
