@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
@@ -21,11 +21,14 @@
     .btn{cursor:pointer;user-select:none;font-weight:700;border-radius:12px;border:none;padding:10px 12px;font-size:16px;background:linear-gradient(180deg,var(--accent),#5f78ff);color:#0b0f24;box-shadow:0 6px 24px rgba(95,120,255,.45)}
     .btn:active{transform:translateY(1px)}
     .list{margin-top:16px;display:grid;gap:10px}
-    .row{display:grid;grid-template-columns:44px 1fr 120px 120px;align-items:center;gap:10px;padding:14px;border-radius:14px;background:#151a36;border:1px solid #262c4f}
+    .sectionLabel{margin:8px 6px 2px;color:var(--ink-dim);font-size:14px;letter-spacing:.2px}
+    .row{display:grid;grid-template-columns:44px 28px 1fr 120px 120px;align-items:center;gap:10px;padding:14px;border-radius:14px;background:#151a36;border:1px solid #262c4f;touch-action:none}
     .row.active{background:var(--highlight);border-color:#3b468a;box-shadow:inset 0 0 0 2px rgba(138,160,255,.25)}
     .select{appearance:none;width:28px;height:28px;border-radius:8px;border:2px solid #3a4272;background:#10142e;display:grid;place-items:center;cursor:pointer}
     .select:checked{border-color:var(--accent);background:rgba(138,160,255,.18)}
     .select:checked::after{content:"✓";font-size:18px;color:var(--accent);font-weight:900}
+    .drag{width:28px;height:28px;border-radius:8px;border:1px dashed #3a4272;display:grid;place-items:center;cursor:grab;color:#8892c7;font-size:18px;user-select:none}
+    .drag:active{cursor:grabbing}
     .title{font-size:clamp(18px,3.2vw,22px);line-height:1.3}
     .hours{font-size:clamp(18px,3.2vw,22px);justify-self:end}
     .toggleActive{display:inline-flex;align-items:center;gap:8px;justify-self:end}
@@ -46,15 +49,16 @@
     .bulk.show{display:grid}
     .btn.ghost{background:#0f1433;color:var(--ink);border:1px solid #2a325a;box-shadow:none}
     .btn.danger{background:linear-gradient(180deg,#ff9a9a,#ff6b6b);color:#250a0a;box-shadow:0 6px 24px rgba(255,107,107,.35)}
-    .hint{color:var(--ink-dim);font-size:14px}
-    @media (max-width:640px){.inputs{grid-template-columns:1fr 120px 110px}.row{grid-template-columns:40px 1fr 100px 110px}.planCard{grid-template-columns:1fr}}
+    .placeholder{border:2px dashed #3b468a;background:rgba(138,160,255,.08);border-radius:14px;height:60px}
+    .dragging{opacity:.9;box-shadow:0 14px 40px rgba(0,0,0,.45);}
+    @media (max-width:640px){.inputs{grid-template-columns:1fr 120px 110px}.row{grid-template-columns:40px 28px 1fr 100px 110px}.planCard{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="topbar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 6px 14px;">
       <h1>Games Bucket List</h1>
-      <div class="hint">Press Enter or tap Add • Double-tap to edit • Switch = active</div>
+      <div class="hint">Drag by the handle • Switch = active • Double‑tap to edit</div>
     </div>
     <div class="card">
       <div class="inputs">
@@ -62,7 +66,10 @@
         <input id="hoursInput" type="number" placeholder="Hours" min="0" step="0.5" inputmode="decimal" enterkeyhint="done" />
         <button class="btn" id="addBtn">Add</button>
       </div>
-      <div id="list" class="list"></div>
+      <div class="sectionLabel">Active</div>
+      <div id="listActive" class="list"></div>
+      <div class="sectionLabel">Inactive</div>
+      <div id="listInactive" class="list"></div>
       <div id="empty" class="empty" style="display:none">Nothing here yet. Add games above.</div>
     </div>
   </div>
@@ -91,14 +98,14 @@
 
 <script>
 (function(){
-  // Use a STABLE storage key so data survives app updates
   const STORAGE_KEY = 'gameBucketList.data';
   const DAILY_KEY = 'gameBucketList.daily';
-  const APP_VERSION = 'v6'; // for internal migrations if needed later
+  const APP_VERSION = 'v7';
 
   let items = [];
   const $ = sel => document.querySelector(sel);
-  const listEl = $('#list');
+  const listA = $('#listActive');
+  const listI = $('#listInactive');
   const emptyEl = $('#empty');
   const sumEl = $('#sumHours');
   const activeCountEl = $('#activeCount');
@@ -115,8 +122,6 @@
   const dailyIn = $('#dailyHours');
   const etaText = $('#etaText');
 
-  window.scrollTo(0,0);
-
   function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4); }
   function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: APP_VERSION, items })); }
   function load(){
@@ -124,39 +129,45 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) { items = []; return; }
       const parsed = JSON.parse(raw);
-      items = parsed.items || [];
+      items = (parsed.items || []).map((x,i)=> ({ id:x.id||uid(), title:x.title||'', hours:Number(x.hours)||0, active: !!x.active, selected: !!x.selected, order: Number.isFinite(x.order)? x.order : i }));
     } catch(e){ items = []; }
   }
 
-  function render(){
-    const sorted = [...items].sort((a,b)=> (Number(b.active) - Number(a.active)) || a.title.localeCompare(b.title));
-    listEl.innerHTML = '';
-    emptyEl.style.display = sorted.length===0 ? 'block' : 'none';
-    const frag = document.createDocumentFragment();
-    sorted.forEach(item => {
-      const row = document.createElement('div'); row.className='row' + (item.active ? ' active' : ''); row.dataset.id=item.id;
+  function normalizeOrder(group){
+    const arr = items.filter(x=>x.active===group).sort((a,b)=> (a.order??0) - (b.order??0));
+    arr.forEach((x,idx)=> x.order = idx);
+  }
 
+  function render(){
+    const active = items.filter(x=>x.active).sort((a,b)=> (a.order??0)-(b.order??0));
+    const inactive = items.filter(x=>!x.active).sort((a,b)=> (a.order??0)-(b.order??0));
+
+    listA.innerHTML = ''; listI.innerHTML = '';
+    emptyEl.style.display = (active.length + inactive.length)===0 ? 'block' : 'none';
+
+    const buildRow = (item)=>{
+      const row = document.createElement('div'); row.className='row' + (item.active ? ' active' : ''); row.dataset.id=item.id;
       const select = document.createElement('input'); select.type='checkbox'; select.className='select'; select.checked = !!item.selected;
       select.addEventListener('change', ()=>{ item.selected = select.checked; save(); updateBulkUI(); });
-
-      const title = document.createElement('div'); title.className='title'; title.textContent=item.title;
-      title.title='Double-tap to edit'; title.addEventListener('dblclick', ()=> startEditTitle(title, item));
-
+      const drag = document.createElement('div'); drag.className='drag'; drag.textContent='⋮'; drag.title='Drag to reorder';
+      const title = document.createElement('div'); title.className='title'; title.textContent=item.title; title.title='Double-tap to edit';
+      title.addEventListener('dblclick', ()=> startEditTitle(title, item));
       const hours = document.createElement('div'); hours.className='hours'; hours.textContent = formatHours(item.hours);
       hours.title='Double-tap to edit'; hours.addEventListener('dblclick', ()=> startEditHours(hours, item));
-
       const activeWrap = document.createElement('div'); activeWrap.className='toggleActive';
       const switchEl = document.createElement('div'); switchEl.className='switch' + (item.active ? ' on' : '');
       switchEl.setAttribute('role','switch'); switchEl.setAttribute('aria-checked', item.active ? 'true' : 'false');
-      switchEl.addEventListener('click', ()=>{ item.active = !item.active; switchEl.classList.toggle('on', item.active); switchEl.setAttribute('aria-checked', item.active ? 'true' : 'false'); save(); updateSum(); render(); });
       const label = document.createElement('div'); label.textContent = item.active ? 'active' : 'inactive'; label.style.fontSize='14px'; label.style.color='var(--ink-dim)';
-      switchEl.addEventListener('click', ()=>{ label.textContent = item.active ? 'active' : 'inactive'; });
+      switchEl.addEventListener('click', ()=>{ item.active = !item.active; switchEl.classList.toggle('on', item.active); switchEl.setAttribute('aria-checked', item.active ? 'true' : 'false'); label.textContent = item.active ? 'active' : 'inactive'; save(); normalizeOrder(true); normalizeOrder(false); render(); updateSum(); });
       activeWrap.append(label, switchEl);
 
-      row.append(select, title, hours, activeWrap);
-      frag.append(row);
-    });
-    listEl.append(frag);
+      row.append(select, drag, title, hours, activeWrap);
+      attachDrag(row, drag, item.active);
+      return row;
+    };
+
+    active.forEach(it=> listA.append(buildRow(it)));
+    inactive.forEach(it=> listI.append(buildRow(it)));
     updateSum();
     updateBulkUI();
   }
@@ -164,7 +175,7 @@
   function updateBulkUI(){
     const selected = items.filter(x=>x.selected);
     selCountEl.textContent = String(selected.length);
-    bulkBar.classList.toggle('show', selected.length > 0 || true); // always show to expose export/import
+    bulkBar.classList.toggle('show', true);
     bulkEditBtn.disabled = selected.length !== 1;
     bulkDeleteBtn.disabled = selected.length === 0;
   }
@@ -197,7 +208,9 @@
     const h = parseFloat(raw);
     if(!t){ titleIn.focus(); return; }
     const hours = Number.isFinite(h) && h >= 0 ? h : 0;
-    items.push({ id: uid(), title: t, hours, active: true, selected: false });
+    const groupArr = items.filter(x=>x.active).sort((a,b)=> (a.order??0)-(b.order??0));
+    const nextOrder = groupArr.length ? (groupArr[groupArr.length-1].order + 1) : 0;
+    items.push({ id: uid(), title: t, hours, active: true, selected: false, order: nextOrder });
     titleIn.value=''; hoursIn.value='';
     save(); render(); titleIn.focus();
   }
@@ -210,7 +223,8 @@
   function editSelected(){
     const item = items.find(x=>x.selected);
     if(!item) return;
-    const row = listEl.querySelector('.row[data-id="'+item.id+'"]');
+    const container = item.active ? listA : listI;
+    const row = container.querySelector('.row[data-id="'+item.id+'"]');
     if(!row) return;
     startEditTitle(row.querySelector('.title'), item);
     startEditHours(row.querySelector('.hours'), item);
@@ -233,7 +247,72 @@
     el.replaceWith(input); input.focus(); input.select();
   }
 
-  // Export / Import
+  function attachDrag(row, handle, isActiveGroup){
+    let dragging = null, startY = 0, placeholder = null, container = isActiveGroup ? listA : listI;
+
+    const onPointerMove = (e)=>{
+      if(!dragging) return;
+      e.preventDefault();
+      const y = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+      const dy = y - startY;
+      dragging.style.transform = 'translateY(' + dy + 'px)';
+      const rows = Array.from(container.querySelectorAll('.row'));
+      const rect = dragging.getBoundingClientRect();
+      const midY = rect.top + rect.height/2 + dy;
+      let target = null;
+      for(const r of rows){
+        if(r===dragging) continue;
+        const rr = r.getBoundingClientRect();
+        if(midY < rr.top + rr.height/2){ target = r; break; }
+      }
+      if(target){
+        container.insertBefore(placeholder, target);
+      } else {
+        container.appendChild(placeholder);
+      }
+    };
+
+    const endDrag = ()=>{
+      if(!dragging) return;
+      dragging.classList.remove('dragging');
+      dragging.style.position=''; dragging.style.zIndex=''; dragging.style.width=''; dragging.style.left=''; dragging.style.transform='';
+      placeholder.replaceWith(dragging);
+      placeholder = null;
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', endDrag);
+      document.removeEventListener('pointercancel', endDrag);
+      const ids = Array.from(container.querySelectorAll('.row')).map(r=> r.dataset.id);
+      const groupItems = items.filter(x=>x.active===isActiveGroup);
+      ids.forEach((id, idx)=>{
+        const it = groupItems.find(g=>g.id===id);
+        if(it) it.order = idx;
+      });
+      save(); render();
+    };
+
+    const startDrag = (e)=>{
+      e.preventDefault();
+      container = (row.classList.contains('active') ? listA : listI);
+      isActiveGroup = row.classList.contains('active');
+      startY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+      dragging = row;
+      placeholder = document.createElement('div'); placeholder.className='placeholder'; placeholder.style.height = row.offsetHeight + 'px';
+      row.parentElement.insertBefore(placeholder, row);
+      const rect = row.getBoundingClientRect();
+      row.classList.add('dragging');
+      row.style.position='relative';
+      row.style.zIndex='10';
+      row.style.width = rect.width + 'px';
+      row.style.left = '0px';
+      document.addEventListener('pointermove', onPointerMove, {passive:false});
+      document.addEventListener('pointerup', endDrag);
+      document.addEventListener('pointercancel', endDrag);
+    };
+
+    handle.addEventListener('pointerdown', startDrag);
+    handle.addEventListener('touchmove', (e)=>{ if(dragging) e.preventDefault(); }, {passive:false});
+  }
+
   function exportData(){
     const data = { version: APP_VERSION, exportedAt: new Date().toISOString(), items, daily: dailyIn.value || '' };
     const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
@@ -248,7 +327,9 @@
     reader.onload = (e)=>{
       try{
         const data = JSON.parse(String(e.target.result||'{}'));
-        if(Array.isArray(data.items)){ items = data.items.map(x => ({ id: x.id || (Math.random()+''+Date.now()), title: x.title||'', hours: Number(x.hours)||0, active: !!x.active, selected:false })); }
+        if(Array.isArray(data.items)){
+          items = data.items.map((x,idx) => ({ id: x.id || (Math.random()+''+Date.now()), title: x.title||'', hours: Number(x.hours)||0, active: !!x.active, selected:false, order: Number.isFinite(x.order)? x.order : idx }));
+        }
         if(data.daily !== undefined){ dailyIn.value = String(data.daily); localStorage.setItem(DAILY_KEY, dailyIn.value); }
         save(); render(); updateSum();
         alert('Import successful.');
@@ -257,35 +338,29 @@
     reader.readAsText(file);
   }
 
-  // Buttons + Enter
   addBtn.addEventListener('click', add);
   titleIn.addEventListener('keydown', e=>{ if(e.key==='Enter') add(); });
   hoursIn.addEventListener('keydown', e=>{ if(e.key==='Enter') add(); });
 
-  // Bulk + backup
   document.getElementById('bulkDeleteBtn').addEventListener('click', removeSelected);
   document.getElementById('bulkEditBtn').addEventListener('click', editSelected);
   exportBtn.addEventListener('click', exportData);
   importBtn.addEventListener('click', ()=> importFile.click());
   importFile.addEventListener('change', ()=>{ if(importFile.files && importFile.files[0]) importData(importFile.files[0]); });
 
-  // Daily ETA persist & recalc
   function saveDaily(){ localStorage.setItem(DAILY_KEY, dailyIn.value || ''); }
   dailyIn.addEventListener('input', ()=>{ saveDaily(); updateSum(); });
 
-  // Init
   try { const v = localStorage.getItem(DAILY_KEY); if(v!==null) dailyIn.value = v; } catch(e) {}
   try {
-    const old = localStorage.getItem('gameBucketList.v4') || localStorage.getItem('gameBucketList.v5');
-    // one-time migration if older keys exist
-    if(old && !localStorage.getItem(STORAGE_KEY)){
-      const arr = JSON.parse(old) || [];
-      if(Array.isArray(arr)) items = arr;
+    const oldRaw = localStorage.getItem('gameBucketList.data');
+    if(oldRaw && !localStorage.getItem(STORAGE_KEY)){
+      localStorage.setItem(STORAGE_KEY, oldRaw);
     }
   } catch(e){}
-  load(); render();
-
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) window.scrollTo(0,0); });
+  load();
+  normalizeOrder(true); normalizeOrder(false);
+  save(); render();
 })();
 </script>
 </body>
